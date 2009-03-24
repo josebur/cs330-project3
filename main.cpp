@@ -6,7 +6,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    cout << "!" << endl;
+    cout << "Molly fucking rules" << endl;
     
     return 0;
 }
