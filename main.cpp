@@ -7,7 +7,6 @@
 using namespace std;
 
 Token token;
-string bcode;
 
 bool program(istream &is);
 bool function(istream &is);
@@ -41,7 +40,6 @@ int main(int argc, char *argv[])
     if (program(inFile)) {
         cout << "## This is a valid program." << endl;
         cout << "##### beautified code follows #####" << endl;
-        cout << bcode << endl;
         cout << "##### end beautified code #####" << endl;
     }
     else {
@@ -105,13 +103,10 @@ bool stmtlist(istream &is)
 {
     if (stmt(is)) {
         if (token.Type() == SEMICOLON) {
-            bcode += token.Value();
-            bcode += "\n";
             token.Get(is);
             return stmtlist(is);
         }
     }
-    bcode += "\n";
     return true;
 }
 
