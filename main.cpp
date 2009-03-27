@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
+#include <sstream>
 
 #include "Token.h"
 
@@ -14,19 +16,49 @@ bool compound(istream &is);
 bool stmtlist(istream &is);
 bool stmt(istream &is);
 
+struct Memory
+{
+    Memory(string nameValue, int startValue, int endValue)
+    {
+        name = nameValue;
+        start = startValue;
+        end = endValue;
+        size = end - start + 1;
+    }
+
+    string name;
+    int start;
+    int end;
+    int size;
+};
+
+vector<Memory> variables;
+vector<Memory> heap;
+
+bool deleteVariable(string id);
+bool malloc(string id, string size);
+void PrintVars();
+void PrintHeap();
+void PrintBlank();
+
 int main(int argc, char *argv[])
 {
     string filename;
+    int heapSize;
 
     if (argc == 1) {
         cout << "Enter a filename to use: ";
         cin >> filename;
+        cout << "Enter the heap size to use: ";
+        cin >> heapSize;
     }
-    else if (argc == 2) {
+    else if (argc == 3) {
         filename = argv[1];
+        stringstream ss(argv[2]);
+        ss >> heapSize;
     }
     else {
-        cerr << "USAGE: ./beautify <file>" << endl;
+        cerr << "USAGE: ./heapify <file> <heap size>" << endl;
         return -1;
     }
 
@@ -36,11 +68,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    heap.push_back(Memory("heap", 0, heapSize - 1));
+
     token.Get(inFile);
     if (program(inFile)) {
         cout << "## This is a valid program." << endl;
-        cout << "##### beautified code follows #####" << endl;
-        cout << "##### end beautified code #####" << endl;
     }
     else {
         cout << "## This is not a valid program" << endl;
@@ -55,7 +87,7 @@ int main(int argc, char *argv[])
 */
 bool program(istream &is)
 {
-    return true;
+    return function(is);
 }
 
 /* Function function
@@ -64,7 +96,43 @@ bool program(istream &is)
 */
 bool function(istream &is)
 {
-    return true;
+    if (token.Type() == LBRACK) {
+        token.Get(is);
+        if (token.Type() == VOID) {
+            token.Get(is);
+            if (token.Type() == RBRACK) {
+                token.Get(is);
+                if (token.Type() == ID) {
+                    token.Get(is);
+                    if (token.Type() == LPAREN) {
+                        token.Get(is);
+                        if (token.Type() == RPAREN) {
+                            token.Get(is);
+                            return compound(is);
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        return false;
+    }
 }
 
 /* Function compound
@@ -118,5 +186,121 @@ bool stmtlist(istream &is)
 */
 bool stmt(istream &is)
 {
+    if (token.Type() == ID) {
+        string id = token.Value();
+        token.Get(is);
+        if (token.Type() == LPAREN) { // delete
+            token.Get(is);
+            if (token.Type() == ID) {
+                string variable = token.Value();
+                //cout << variable;
+                token.Get(is);
+                if (token.Type() == RPAREN) {
+                    token.Get(is);
+                    deleteVariable(variable);
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        else if (token.Type() == ASSIGNOP) {
+            token.Get(is);
+            if (token.Type() == ID) {
+                token.Get(is);
+                if (token.Type() == LPAREN) {
+                    token.Get(is);
+                    if (token.Type() == NUM_INT) {
+                        string size = token.Value();
+                        token.Get(is);
+                        if (token.Type() == RPAREN) {
+                            token.Get(is);
+                            malloc(id, size);
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            if (id == "PrintVars") {
+                PrintVars();
+            }
+            else if (id == "PrintHeap") {
+                PrintHeap();
+            }
+            else if (id == "PrintBlank") {
+                PrintBlank();
+            }
+            return true;
+        }
+    }
+    else {
+        return false;
+    }
+}
+
+bool deleteVariable(string id)
+{
+    cout << "deleteVariable: " << id << endl;
     return true;
+}
+
+bool malloc(string id, string size)
+{
+    cout << "malloc: " << id << " of size " << size << endl;
+    return true;
+}
+
+void PrintVars()
+{
+    cout << "Current list of dynamic variables with allocations:" << endl;
+    if (variables.empty()) {
+        cout << "   <empty>" << endl;
+    }
+    else {
+        vector<Memory>::iterator it;
+        for (it = variables.begin(); it != variables.end(); ++it) {
+            cout << (*it).name << "-->[" << (*it).start << " ... " << (*it).end
+                 << "] (" << (*it).size << ")" << endl;
+        }
+    }
+    cout << "==== End of variable listing ====" << endl;
+}
+
+void PrintHeap()
+{
+    cout << "Heap freelist is currently:" << endl;
+    if (heap.empty()) {
+        cout << "   <empty>" << endl;
+    }
+    else {
+        vector<Memory>::iterator it;
+        for (it = heap.begin(); it != heap.end(); ++it) {
+            cout << (*it).name << "-->[" << (*it).start << " ... " << (*it).end
+                 << "] (" << (*it).size << ")" << endl;
+        }
+    }
+    cout << "==== End of variable listing ====" << endl;
+}
+
+void PrintBlank()
+{
+    cout << endl;
 }
